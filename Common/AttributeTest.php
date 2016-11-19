@@ -58,7 +58,7 @@ class AttributeTest {
 
     public function __toString(): string
     {
-        $string = $this->attribute->getName() . "=(". implode("V", $this->values) . ")";
+        $string = $this->attribute->getName() . "=(". implode("||", $this->values) . ")";
         return $string;
     }
 }

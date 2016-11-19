@@ -1,16 +1,25 @@
 <?php
-require_once __DIR__ . "/../Common/Rule.php";
-require_once __DIR__ . "/../Common/AttributeTest.php";
+error_reporting(E_ALL);
+ini_set("display_errors", 1);
 
-$language = [
-    "SKY" => ["SUN", "RAIN"],
-    "AIR" => ["HOT", "COLD"],
-    "AIR_WET" => ["NORMAL", "HIGH"],
-    "WIND" => ["STRONG", "WEAK"],
-    "WATER" => ["HOT", "COLD"],
-    "PROGNOZA" => ["SAME", "CHANGE"],
-    "RESULT" => ["T", "F"]
-];
+require_once __DIR__ . "/../Common/Rule.php";
+require_once __DIR__ . "/../Common/RulesSet.php";
+require_once __DIR__ . "/../Common/AttributeTest.php";
+require_once __DIR__ . "/../GA/GeneticAlgorithm.php";
+require_once __DIR__ . "/../Common/Language.php";
+require_once __DIR__ . "/../Common/Attribute.php";
+
+$Language = new Language(
+    [
+        new Attribute("SKY", ["SUN", "RAIN", "CLOUDS"]),
+        new Attribute("AIR", ["HOT", "COLD"]),
+        new Attribute("AIR_WET", ["NORMAL", "HIGH"]),
+        new Attribute("WIND", ["STRONG", "WEAK"]),
+        new Attribute("WATER", ["HOT", "COLD"]),
+        new Attribute("PROGNOZA", ["SAME", "CHANGE"])
+    ],
+    new Attribute("RESULT", ["T", "F"])
+);
 
 function array_kshift(&$arr)
 {
@@ -21,13 +30,13 @@ function array_kshift(&$arr)
 }
 
 function Entropy(array $SetOfExamples) {
-    global $language;
-    $resultLang = $language["RESULT"];
+    global $Language;
+    $resultLang = $Language->getResultAttribute()->getValues();
     $countArray = [];
     foreach ($resultLang as $resultValue)
         $countArray[$resultValue] = 0;
     foreach ($SetOfExamples as $example) {
-        $result = $example["RESULT"];
+        $result = $example[$Language->getResultAttribute()->getName()];
         $countArray[$result]++;
     }
     $count = array_sum($countArray);
@@ -43,13 +52,12 @@ function Entropy(array $SetOfExamples) {
  * @return AttributeTest[]
  */
 function GetAllAttributeTests() {
-    global $language;
+    global $Language;
     $tests = [];
-    foreach ($language as $attr => $values) {
-        if ($attr !== 'RESULT'){
-            foreach ($values as $value){
-                $tests[] = new AttributeTest($attr, [$value]);
-            }
+    foreach ($Language->getAttributes() as $key => $attribute) {
+        $values = $attribute->getValues();
+        foreach ($values as $value){
+            $tests[] = new AttributeTest($attribute, [$value]);
         }
     }
     return $tests;
@@ -70,13 +78,13 @@ function GetSubSetOfExamplesForRule(array $setOfExamples, Rule $rule) {
 }
 
 function GetMostCommonResultFromSet(array $SetOfExamples){
-    global $language;
-    $resultLang = $language["RESULT"];
+    global $Language;
+    $resultLang = $Language->getResultAttribute()->getValues();
     $countArray = [];
     foreach ($resultLang as $resultValue)
         $countArray[$resultValue] = 0;
     foreach ($SetOfExamples as $example) {
-        $result = $example["RESULT"];
+        $result = $example[$Language->getResultAttribute()->getName()];
         $countArray[$result]++;
     }
     arsort($countArray);
@@ -98,7 +106,8 @@ function RuleResultEntropy(array $SetOfExamples, Rule $rule) {
  * @return Rule
  */
 function LearnOneRule(array $setOfExamples, int $beamLevel = 5) {
-    $best = new Rule("T");
+    global $Language;
+    $best = new Rule($Language->getResultAttribute(), "T");
     $bestEntropy = 1.01;
     $candidates = [$best];
     $allTests = GetAllAttributeTests();
@@ -142,7 +151,7 @@ function LearnOneRule(array $setOfExamples, int $beamLevel = 5) {
     return $best;
 }
 
-function LearnSetOfRules(array $setOfExamples, int $beamLevel = 5, float $treshold = 0.25) {
+function LearnSetOfRules(array $setOfExamples, int $beamLevel = 5, float $treshold = 0.25): RulesSet {
     $i = -1;
     $learned = [];
     $learnedEntropy = [];
@@ -160,9 +169,9 @@ function LearnSetOfRules(array $setOfExamples, int $beamLevel = 5, float $tresho
         $rule = LearnOneRule($setOfExamples, $beamLevel);
     }
     asort($learnedEntropy);
-    $resultRules = [];
+    $resultRules = new RulesSet();
     foreach ($learnedEntropy as $key => $value) {
-        $resultRules[] = $learned[$key];
+        $resultRules->AddRule($learned[$key]);
     }
     return $resultRules;
 }
@@ -213,8 +222,17 @@ $examples = [
         "PROGNOZA" => "SAME",
         "RESULT" => "F",
     ],
+    [
+        "SKY" => "CLOUDS",
+        "AIR" => "HOT",
+        "AIR_WET" => "NORMAL",
+        "WIND" => "WEAK",
+        "WATER" => "HOT",
+        "PROGNOZA" => "SAME",
+        "RESULT" => "F",
+    ],
 ];
 
 $rules = LearnSetOfRules($examples);
-print_r($rules);
+echo($rules);
 file_put_contents("rules.ml", serialize($rules));

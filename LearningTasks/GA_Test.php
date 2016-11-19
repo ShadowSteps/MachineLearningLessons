@@ -14,7 +14,7 @@ require_once __DIR__ . "/../Common/Attribute.php";
 
 $Language = new Language(
     [
-        new Attribute("SKY", ["SUN", "RAIN"]),
+        new Attribute("SKY", ["SUN", "RAIN", "CLOUDS"]),
         new Attribute("AIR", ["HOT", "COLD"]),
         new Attribute("AIR_WET", ["NORMAL", "HIGH"]),
         new Attribute("WIND", ["STRONG", "WEAK"]),
@@ -91,7 +91,7 @@ $examples = [
     ],
 ];
 
-$Test = new GA_Test($Language, 25, $examples, 0.85, 0.05, 0.6);
+$Test = new GA_Test($Language, 100, $examples, 0.90, 0.001, 0.6);
 $Rules = $Test->RunLearning();
 echo "Found rules:".PHP_EOL;
 echo ($Rules);

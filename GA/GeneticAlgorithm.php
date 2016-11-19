@@ -241,16 +241,22 @@ abstract class GeneticAlgorithm
                 $newPopulation = array_merge($newPopulation, $this->CreateIndividualsFromParents($this->population[$selectedKeyFirst], $this->population[$selectedKeySecond]));
             }
             $this->population = $newPopulation;
-            if (((float) mt_rand() / (float) mt_getrandmax()) <= $this->mutateChance||count(array_unique($this->population)) == 1) {
+            if (((float) mt_rand() / (float) mt_getrandmax()) <= $this->mutateChance) {
                 $mutateKey =  mt_rand(0, $this->populationSize - 1);
                 $string = $this->population[$mutateKey];
                 $rand = mt_rand(0, strlen($string) - 1);
                 $string[$rand] = $string[$rand] == "1" ? "0" : "1";
                 $this->population[$mutateKey] = $string;
             }
+            if (count(array_unique($this->population)) == 1){
+                $this->GenerateInitialPopulation();
+                echo "GENERATION NEW POPULATION!".PHP_EOL;
+            }
+
             $checkValues = $this->CalculatePopulationCheckValues();
             arsort($checkValues);
             list($first) = $checkValues;
+            echo "Best result in population: ".$first.PHP_EOL;
         }
         list($firstKey) = array_keys($checkValues);
         echo "Population has successor with check: ".$checkValues[$firstKey].PHP_EOL;
